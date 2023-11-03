@@ -18,7 +18,7 @@ import re
 eventDelete = True
 daysToSearch = 140
 #Should not contain spaces, dashes or underscores. May contain cammel case
-requieredEvent = "b.day"
+requieredEvent = "b.*day"
 checkForEarly = True
 period = "1st"
 
@@ -242,7 +242,7 @@ def main():
             print(f"{requieredEvent} found")
             if checkForEarly:
                 print("checking for early")
-                if any(re.search("early.out", summary) for summary in summaryList):
+                if any(re.search("early.*out", summary) for summary in summaryList):
                     early = True
                     seminaryEvent["start"]["dateTime"] = (seminaryTimes[period][5]["start"]+timedelta(days=i)).isoformat()
                     seminaryEvent["end"]["dateTime"] = (seminaryTimes[period][5]["end"]+timedelta(days=i)).isoformat()
