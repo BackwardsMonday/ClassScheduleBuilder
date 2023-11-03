@@ -12,12 +12,13 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import re
 
 #IMPORTANT NOTE: if this is true program will delete events on callander
 eventDelete = True
 daysToSearch = 140
 #Should not contain spaces, dashes or underscores. May contain cammel case
-requieredEvent = "bDay"
+requieredEvent = "b.day"
 checkForEarly = True
 period = "1st"
 
@@ -44,7 +45,7 @@ def getCreds():
 
 def main():
     creds = getCreds()
-    seminaryCalanderId = "topgs9fo3mi8p975dlo59c48h4@group.calendar.google.com"
+    seminaryCalanderId = "7689b4df03b4dfe55d34d3a544bb52c112b87f8eecd8af4ba2b65fe9e7d06ac8@group.calendar.google.com"
     seminaryEvent = {
         'summary': 'Seminary',
         'location': '2270 W 4800 S, Roy, UT 84067',
@@ -235,13 +236,13 @@ def main():
         print(dayOfWeek)
 
         
-        summaryList = [event['summary'].strip().lower().replace(" ", "").replace("-", "").replace("_", "") for event in events]
+        summaryList = [event['summary'].strip().lower() for event in events]
         print(summaryList)
-        if requieredEvent.lower() in summaryList:
+        if any(re.search(requieredEvent.lower(), summary) for summary in summaryList):
             print(f"{requieredEvent} found")
             if checkForEarly:
                 print("checking for early")
-                if any("earlyout" in summary for summary in summaryList):
+                if any(re.search("early.out", summary) for summary in summaryList):
                     early = True
                     seminaryEvent["start"]["dateTime"] = (seminaryTimes[period][5]["start"]+timedelta(days=i)).isoformat()
                     seminaryEvent["end"]["dateTime"] = (seminaryTimes[period][5]["end"]+timedelta(days=i)).isoformat()
