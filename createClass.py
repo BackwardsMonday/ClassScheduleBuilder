@@ -14,12 +14,13 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import re
 
-#IMPORTANT NOTE: if this is true program will delete events on callander
+#IMPORTANT NOTE: if this is true program will delete ALL events on callander
 eventDelete = True
 daysToSearch = 140
-#Should not contain spaces, dashes or underscores. May contain cammel case
+#Idealy contains regex instead of spaces or cammel case; eg "b.*day"
 requieredEvent = "b.*day"
 checkForEarly = True
+#Should be a string containg an ordianal number; eg "1st"
 period = "1st"
 
 def getCreds():
