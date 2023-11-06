@@ -14,14 +14,17 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import re
 
-#IMPORTANT NOTE: if this is true program will delete ALL events on callander
-eventDelete = True
+#IMPORTANT: if this is true program will delete ALL events on callander
+shouldDelete = True
+#If false, no events will be created
+shouldCreate = True
 daysToSearch = 140
 #Idealy contains regex instead of spaces or cammel case; eg "b.*day"
 requieredEvent = "b.*day"
 checkForEarly = True
 #Should be a string containg an ordianal number; eg "1st"
 period = "1st"
+seminaryCalanderId = "7689b4df03b4dfe55d34d3a544bb52c112b87f8eecd8af4ba2b65fe9e7d06ac8@group.calendar.google.com"
 
 def getCreds():
     SCOPES = ['https://www.googleapis.com/auth/calendar.events']
@@ -44,9 +47,62 @@ def getCreds():
             token.write(creds.to_json())
     return creds
 
+def delEvents(service, todayAllDay):
+    seminaryCalanderEventsResult = service.events().list(calendarId=seminaryCalanderId, timeMin=todayAllDay.isoformat()+"Z").execute()
+    seminaryCalanderEvents = seminaryCalanderEventsResult.get('items', [])
+    print("Finding events to delete")
+    if seminaryCalanderEvents:
+        print("Events found")
+        for event in seminaryCalanderEvents:
+            print(event["id"])
+            service.events().delete(calendarId=seminaryCalanderId, eventId=event["id"]).execute()
+            print("Event deleted")
+
+def createEvents(service, todayAllDay, seminaryEvent, seminaryTimes):
+    for i in range(daysToSearch):
+        early = False
+        allDay = (todayAllDay+timedelta(days=i)).isoformat() + 'Z'
+        endAllDay = (todayAllDay+timedelta(days=i, seconds=1)).isoformat() + 'Z'
+        dayOfWeek = (todayAllDay+timedelta(days=i)).weekday()
+        events_result = service.events().list(calendarId='708@wsd.net', timeMin=allDay,
+                                                timeMax=endAllDay,
+                                                maxResults=10, singleEvents=True,
+                                                orderBy='startTime').execute()
+        
+        events = events_result.get('items', [])
+        if not events:
+            print('No upcoming events found.')
+            continue
+
+        print(dayOfWeek)
+
+        
+        summaryList = [event['summary'].strip().lower() for event in events]
+        print(summaryList)
+        if any(re.search(requieredEvent.lower(), summary) for summary in summaryList):
+            print(f"{requieredEvent} found")
+            if checkForEarly:
+                print("checking for early")
+                if any(re.search("early.*out", summary) for summary in summaryList):
+                    early = True
+                    seminaryEvent["start"]["dateTime"] = (seminaryTimes[period][5]["start"]+timedelta(days=i)).isoformat()
+                    seminaryEvent["end"]["dateTime"] = (seminaryTimes[period][5]["end"]+timedelta(days=i)).isoformat()
+                    seminaryEvent["summary"]="Seminary EARLY"
+            if not early:
+                seminaryEvent["start"]["dateTime"]= (seminaryTimes[period][dayOfWeek]["start"]+timedelta(days=i)).isoformat()
+                seminaryEvent["end"]["dateTime"]= (seminaryTimes[period][dayOfWeek]["end"]+timedelta(days=i)).isoformat()
+                seminaryEvent["summary"]="Seminary"
+
+            service.events().insert(calendarId=seminaryCalanderId,body=seminaryEvent).execute()
+            print("event created")
+        elif "aday" in summaryList:
+            print("event not created: A day")
+        # for event in events:
+        #     start = event['start'].get('dateTime', event['start'].get('date'))
+        #     print(start, event['summary'])
+
 def main():
     creds = getCreds()
-    seminaryCalanderId = "7689b4df03b4dfe55d34d3a544bb52c112b87f8eecd8af4ba2b65fe9e7d06ac8@group.calendar.google.com"
     seminaryEvent = {
         'summary': 'Seminary',
         'location': '2270 W 4800 S, Roy, UT 84067',
@@ -208,58 +264,11 @@ def main():
         ]
         
     }
-    if eventDelete:
-            seminaryCalanderEventsResult = service.events().list(calendarId=seminaryCalanderId, timeMin=todayAllDay.isoformat()+"Z").execute()
-            seminaryCalanderEvents = seminaryCalanderEventsResult.get('items', [])
-            print("Finding events to delete")
-            if seminaryCalanderEvents:
-                print("Events found")
-                for event in seminaryCalanderEvents:
-                    print(event["id"])
-                    service.events().delete(calendarId=seminaryCalanderId, eventId=event["id"]).execute()
-                    print("Event deleted")
-
-    for i in range(daysToSearch):
-        early = False
-        allDay = (todayAllDay+timedelta(days=i)).isoformat() + 'Z'
-        endAllDay = (todayAllDay+timedelta(days=i, seconds=1)).isoformat() + 'Z'
-        dayOfWeek = (todayAllDay+timedelta(days=i)).weekday()
-        events_result = service.events().list(calendarId='708@wsd.net', timeMin=allDay,
-                                                timeMax=endAllDay,
-                                                maxResults=10, singleEvents=True,
-                                                orderBy='startTime').execute()
-        
-        events = events_result.get('items', [])
-        if not events:
-            print('No upcoming events found.')
-            continue
-
-        print(dayOfWeek)
-
-        
-        summaryList = [event['summary'].strip().lower() for event in events]
-        print(summaryList)
-        if any(re.search(requieredEvent.lower(), summary) for summary in summaryList):
-            print(f"{requieredEvent} found")
-            if checkForEarly:
-                print("checking for early")
-                if any(re.search("early.*out", summary) for summary in summaryList):
-                    early = True
-                    seminaryEvent["start"]["dateTime"] = (seminaryTimes[period][5]["start"]+timedelta(days=i)).isoformat()
-                    seminaryEvent["end"]["dateTime"] = (seminaryTimes[period][5]["end"]+timedelta(days=i)).isoformat()
-                    seminaryEvent["summary"]="Seminary EARLY"
-            if not early:
-                seminaryEvent["start"]["dateTime"]= (seminaryTimes[period][dayOfWeek]["start"]+timedelta(days=i)).isoformat()
-                seminaryEvent["end"]["dateTime"]= (seminaryTimes[period][dayOfWeek]["end"]+timedelta(days=i)).isoformat()
-                seminaryEvent["summary"]="Seminary"
-
-            service.events().insert(calendarId=seminaryCalanderId,body=seminaryEvent).execute()
-            print("event created")
-        elif "aday" in summaryList:
-            print("event not created: A day")
-        # for event in events:
-        #     start = event['start'].get('dateTime', event['start'].get('date'))
-        #     print(start, event['summary'])
+    if shouldDelete:
+        delEvents(service, todayAllDay)
+    if shouldCreate:
+        createEvents(service, todayAllDay, seminaryEvent, seminaryTimes)
+    
 
 if __name__ == '__main__':
     main()
