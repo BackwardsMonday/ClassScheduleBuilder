@@ -22,6 +22,7 @@ daysToSearch = 140
 #Idealy contains regex instead of spaces or cammel case; eg "b.*day"
 requieredEvent = "b.*day"
 checkForEarly = True
+checkForAssembly = True
 #Should be a string containg an ordianal number; eg "1st"
 period = "1st"
 seminaryCalanderId = "7689b4df03b4dfe55d34d3a544bb52c112b87f8eecd8af4ba2b65fe9e7d06ac8@group.calendar.google.com"
@@ -92,6 +93,11 @@ def createEvents(service, todayAllDay, seminaryEvent, seminaryTimes):
                 seminaryEvent["start"]["dateTime"]= (seminaryTimes[period][dayOfWeek]["start"]+timedelta(days=i)).isoformat()
                 seminaryEvent["end"]["dateTime"]= (seminaryTimes[period][dayOfWeek]["end"]+timedelta(days=i)).isoformat()
                 seminaryEvent["summary"]="Seminary"
+            if checkForAssembly:
+                if any("assembly" in summary for summary in summaryList):
+                    seminaryEvent["summary"] += "ASSEMBLY"
+                    seminaryEvent["description"] = "Due to the assembly, start and end time may be off."
+                    
 
             service.events().insert(calendarId=seminaryCalanderId,body=seminaryEvent).execute()
             print("event created")
