@@ -25,7 +25,7 @@ checkForEarly = True
 checkForAssembly = True
 #Should be a string containg an ordianal number; eg "1st"
 period = "1st"
-seminaryCalanderId = "7689b4df03b4dfe55d34d3a544bb52c112b87f8eecd8af4ba2b65fe9e7d06ac8@group.calendar.google.com"
+seminaryCalanderId = "topgs9fo3mi8p975dlo59c48h4@group.calendar.google.com"
 
 def getCreds():
     SCOPES = ['https://www.googleapis.com/auth/calendar.events']
@@ -95,7 +95,7 @@ def createEvents(service, todayAllDay, seminaryEvent, seminaryTimes):
                 seminaryEvent["summary"]="Seminary"
             if checkForAssembly:
                 if any("assembly" in summary for summary in summaryList):
-                    seminaryEvent["summary"] += "ASSEMBLY"
+                    seminaryEvent["summary"] += " ASSEMBLY"
                     seminaryEvent["description"] = "Due to the assembly, start and end time may be off."
                     
 
